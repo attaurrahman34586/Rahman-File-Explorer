@@ -1,0 +1,76 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract ZIP or Fix Nested Folders
+        run: |
+          if [ ! -f "package.json" ]; then
+            ZIP_FILE=$(ls *.zip 2>/dev/null | head -n 1)
+            if [ -n "$ZIP_FILE" ]; then
+              echo "Extracting $ZIP_FILE..."
+              unzip -o "$ZIP_FILE"
+            fi
+          fi
+          if [ ! -f "package.json" ]; then
+            SUBDIR=$(find . -maxdepth 2 -name "package.json" | head -n 1 | xargs dirname)
+            if [ -n "$SUBDIR" ] && [ "$SUBDIR" != "." ]; then
+              echo "Moving project files from $SUBDIR to root..."
+              mv $SUBDIR/* $SUBDIR/.* . 2>/dev/null || true
+            fi
+          fi
+
+      - name: Set up Java JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Setup & Sync Capacitor Android
+        run: |
+          if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
+            echo '{"appId":"com.rahman.fileexplorer","appName":"Rahman File Explorer","webDir":"dist"}' > capacitor.config.json
+          fi
+          if [ ! -d "android" ]; then
+            echo "Android folder missing on GitHub! Adding Android platform automatically..."
+            npx cap add android
+          fi
+          echo "Syncing Capacitor..."
+          npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace --info --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Rahman-File-Explorer-APK
+          path: android/app/build/outputs/apk/debug/*.apk
