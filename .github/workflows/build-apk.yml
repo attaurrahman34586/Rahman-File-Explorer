@@ -29,12 +29,11 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Accept Android SDK Licenses & Install Components
+      - name: Pre-accept Android SDK Licenses
         run: |
-          mkdir -p $ANDROID_HOME/licenses
-          echo -e "24833b2913723163a12368e826610271207aebd7\n84831b9409646a456e86506a6c03e8639d77a442\n50320692011d499132fa4926416e4db77b63f250\nd97536812a378041f01777038166d7e527573a3f\n89330d32220147e1b643b283cc959f796fa0d6f4" > $ANDROID_HOME/licenses/android-sdk-license
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0" 2>/dev/null || true
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf "24833b2913723163a12368e826610271207aebd7\n84831b9409646a456e86506a6c03e8639d77a442\n50320692011d499132fa4926416e4db77b63f250\nd97536812a378041f01777038166d7e527573a3f\n89330d32220147e1b643b283cc959f796fa0d6f4\ne67a69331a7be7281426a86d8b9f6d15b28d5621" > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf "84831b9409646a456e86506a6c03e8639d77a442\n50320692011d499132fa4926416e4db77b63f250\nd97536812a378041f01777038166d7e527573a3f" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
       - name: Install Dependencies
         run: npm install
@@ -56,7 +55,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
