@@ -5,6 +5,11 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+# Cancel in-progress runs for the same workflow/branch to avoid queued backlog
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -30,20 +35,23 @@ jobs:
             fi
           fi
 
-      - name: Set up Java JDK 17
+      - name: Set up Java JDK 17 with Gradle Cache
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+          cache: 'gradle'
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js 22 with NPM Cache
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
-      - name: Accept Android SDK Licenses
+      - name: Accept Android SDK Licenses & Install SDK Components
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0" 2>/dev/null || true
 
       - name: Install Dependencies
         run: npm install
