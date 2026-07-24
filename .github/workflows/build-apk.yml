@@ -5,7 +5,6 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
-# Cancel in-progress runs for the same workflow/branch to avoid queued backlog
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -28,12 +27,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
 
-      - name: Pre-accept Android SDK Licenses
+      - name: Accept Android SDK Licenses
         run: |
-          mkdir -p "$ANDROID_HOME/licenses"
-          printf "24833b2913723163a12368e826610271207aebd7\n84831b9409646a456e86506a6c03e8639d77a442\n50320692011d499132fa4926416e4db77b63f250\nd97536812a378041f01777038166d7e527573a3f\n89330d32220147e1b643b283cc959f796fa0d6f4\ne67a69331a7be7281426a86d8b9f6d15b28d5621" > "$ANDROID_HOME/licenses/android-sdk-license"
-          printf "84831b9409646a456e86506a6c03e8639d77a442\n50320692011d499132fa4926416e4db77b63f250\nd97536812a378041f01777038166d7e527573a3f" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install Dependencies
         run: npm install
@@ -43,12 +41,6 @@ jobs:
 
       - name: Sync Capacitor Android
         run: |
-          if [ ! -f "capacitor.config.json" ] && [ ! -f "capacitor.config.ts" ]; then
-            echo '{"appId":"com.rahman.fileexplorer","appName":"Rahman File Explorer","webDir":"dist"}' > capacitor.config.json
-          fi
-          if [ ! -d "android" ]; then
-            npx cap add android
-          fi
           npx cap sync android
 
       - name: Build Android APK
@@ -61,5 +53,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Rahman-File-Explorer-APK
-          path: android/app/build/outputs/apk/debug/*.apk
-
+          path: android/app/build/outputs/apk/debug/app-debug.apk
