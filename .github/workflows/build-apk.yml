@@ -42,14 +42,18 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Set up Node.js 22 with NPM Cache
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
+
+      - name: Accept Android SDK Licenses
+        run: |
+          mkdir -p $ANDROID_HOME/licenses
+          echo -e "24833b2913723163a12368e826610271207aebd7\n84831b9409646a456e86506a6c03e8639d77a442\n50320692011d499132fa4926416e4db77b63f250" > $ANDROID_HOME/licenses/android-sdk-license
+          echo -e "d97536812a378041f01777038166d7e527573a3f" > $ANDROID_HOME/licenses/android-sdk-preview-license
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses 2>/dev/null || true
 
       - name: Install Dependencies
         run: npm install
