@@ -34,8 +34,28 @@ jobs:
 
       - name: Locate and align project root
         run: |
+          # 1. If package.json is missing, check if user uploaded a .zip file directly to GitHub
           if [ ! -f "package.json" ]; then
-            echo "package.json not found in root directory. Searching subdirectories..."
+            echo "package.json not found in root directory. Searching for uploaded .zip files..."
+            ZIP_FILE=$(find . -maxdepth 2 -name "*.zip" | head -n 1)
+            if [ -n "$ZIP_FILE" ]; then
+              echo "Found uploaded zip file: $ZIP_FILE. Unpacking..."
+              python3 -m zipfile -e "$ZIP_FILE" ./extracted_zip
+              if [ -d "./extracted_zip" ]; then
+                FOUND_PKG=$(find ./extracted_zip -name "package.json" | head -n 1)
+                if [ -n "$FOUND_PKG" ]; then
+                  PKG_DIR=$(dirname "$FOUND_PKG")
+                  echo "Found package.json inside zip at $PKG_DIR. Copying files to workspace root..."
+                  cp -a "$PKG_DIR"/. .
+                fi
+                rm -rf ./extracted_zip
+              fi
+            fi
+          fi
+
+          # 2. If package.json is still missing, search subdirectories
+          if [ ! -f "package.json" ]; then
+            echo "Searching subdirectories for package.json..."
             FOUND_PKG=$(find . -name "package.json" -not -path "*/node_modules/*" -not -path "*/.git/*" | head -n 1)
             if [ -n "$FOUND_PKG" ]; then
               PKG_DIR=$(dirname "$FOUND_PKG")
@@ -43,10 +63,10 @@ jobs:
               cp -a "$PKG_DIR"/. .
             fi
           fi
+
           if [ ! -f "package.json" ]; then
             echo "=== Repository Contents ==="
             ls -la
-            find . -maxdepth 3 -not -path "*/.git/*"
             echo "Error: package.json could not be found."
             exit 1
           fi
