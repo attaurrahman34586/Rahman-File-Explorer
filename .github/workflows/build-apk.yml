@@ -23,6 +23,11 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle 8.2.1
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.2.1'
+
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
@@ -84,13 +89,10 @@ jobs:
           fi
           npx cap sync android
 
-      - name: Verify and repair Gradle Wrapper JAR
+      - name: Ensure valid Gradle Wrapper
         run: |
-          mkdir -p android/gradle/wrapper
-          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ] || ! unzip -t android/gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
-            echo "gradle-wrapper.jar missing or corrupted. Downloading fresh Gradle Wrapper JAR..."
-            curl -sSL "https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar" -o android/gradle/wrapper/gradle-wrapper.jar
-          fi
+          cd android
+          gradle wrapper --gradle-version 8.2.1
 
       - name: Build Android APK
         env:
