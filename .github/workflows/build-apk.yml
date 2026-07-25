@@ -84,6 +84,14 @@ jobs:
           fi
           npx cap sync android
 
+      - name: Verify and repair Gradle Wrapper JAR
+        run: |
+          mkdir -p android/gradle/wrapper
+          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ] || ! unzip -t android/gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
+            echo "gradle-wrapper.jar missing or corrupted. Downloading fresh Gradle Wrapper JAR..."
+            curl -sSL "https://raw.githubusercontent.com/gradle/gradle/v8.2.1/gradle/wrapper/gradle-wrapper.jar" -o android/gradle/wrapper/gradle-wrapper.jar
+          fi
+
       - name: Build Android APK
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx3072m -XX:MaxMetaspaceSize=512m' -Dorg.gradle.vfs.watch=false"
