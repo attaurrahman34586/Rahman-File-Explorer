@@ -32,6 +32,22 @@ jobs:
         run: |
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
+      - name: Locate and align project root
+        run: |
+          if [ ! -f "package.json" ]; then
+            echo "package.json not found in root directory. Searching subdirectories..."
+            FOUND_PKG=$(find . -mindepth 2 -maxdepth 4 -name "package.json" -not -path "*/node_modules/*" | head -n 1)
+            if [ -n "$FOUND_PKG" ]; then
+              PKG_DIR=$(dirname "$FOUND_PKG")
+              echo "Found package.json in $PKG_DIR. Copying contents to workspace root..."
+              cp -a "$PKG_DIR"/. .
+            fi
+          fi
+          if [ ! -f "package.json" ]; then
+            echo "Error: package.json could not be found."
+            exit 1
+          fi
+
       - name: Install Dependencies
         run: npm install
 
